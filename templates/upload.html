@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Document - Smart Family Finance</title>
+    <!-- Use Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Family Finance System</a>
+            <div class="d-flex align-items-center text-white">
+                <span class="me-3">Admin: {{ name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <div class="card shadow">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Upload Financial Document</h4>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+                            
+                            <div class="mb-3">
+                                <label for="user_id" class="form-label">Assign to Member</label>
+                                <select class="form-select" id="user_id" name="user_id" required>
+                                    <option value="" disabled selected>Select a family member...</option>
+                                    {% for u in users %}
+                                        <option value="{{ u.id }}">{{ u.name }} ({{ u.email }})</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">If you don't see any members, please register a user with 'Member' role first.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Select Document (PDF, JPG, PNG)</label>
+                                <!-- Setting accept attribute based on user requirements -->
+                                <input class="form-control" type="file" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">Upload Document</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
