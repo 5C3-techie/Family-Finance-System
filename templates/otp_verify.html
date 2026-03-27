@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Verification - Smart Family Finance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #0d47a1;
+            --secondary-color: #1976d2;
+            --bg-color: #f4f7f6;
+            --accent: #2196f3;
+        }
+        body { 
+            background-color: var(--bg-color); 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card { 
+            border: none; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
+        .btn-primary { background-color: var(--primary-color); border: none; border-radius: 8px; font-weight: 500; padding: 0.75rem; transition: all 0.2s; }
+        .btn-primary:hover { background-color: var(--secondary-color); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(13, 71, 161, 0.2); }
+        .form-control { border-radius: 8px; padding: 0.75rem 1rem; border: 1px solid #e0e0e0; font-size: 1.25rem; letter-spacing: 2px; text-align: center; }
+        .form-control:focus { box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2); border-color: var(--accent); }
+        .auth-icon { font-size: 3rem; color: #f59e0b; line-height: 1; }
+    </style>
+</head>
+<body>
+    <div class="container d-flex justify-content-center">
+        <div class="card bg-white">
+            <div class="text-center mb-4">
+                <i class="bi bi-envelope-open-fill auth-icon mb-2 d-inline-block"></i>
+                <h3 class="fw-bold text-dark mb-0">Enter OTP</h3>
+                <p class="text-muted small">We've sent a 6-digit code to your email</p>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3" role="alert">
+                    <i class="bi bi-info-circle me-1"></i> {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('verify_otp') }}" method="POST">
+                <div class="mb-4">
+                    <input type="text" class="form-control" id="otp" name="otp" placeholder="••••••" maxlength="6" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mb-3"><i class="bi bi-shield-check me-2"></i>Verify Account</button>
+            </form>
+            <div class="text-center">
+                <p class="text-muted small mb-0"><a href="{{ url_for('login') }}" class="text-decoration-none fw-bold text-secondary">Cancel and Return to Login</a></p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
