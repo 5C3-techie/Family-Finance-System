@@ -11,10 +11,10 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Family Finance System</a>
+            <a class="navbar-brand" href="{{ url_for('doc.dashboard') }}">Family Finance System</a>
             <div class="d-flex align-items-center text-white">
                 <span class="me-3">Admin: {{ name }}</span>
-                <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
             </div>
         </div>
     </nav>
@@ -37,10 +37,10 @@
                 <div class="card shadow">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Upload Financial Document</h4>
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+                        <a href="{{ url_for('doc.dashboard') }}" class="btn btn-secondary btn-sm">Back to Dashboard</a>
                     </div>
                     <div class="card-body">
-                        <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ url_for('doc.upload') }}" method="POST" enctype="multipart/form-data">
                             
                             <div class="mb-3">
                                 <label for="user_id" class="form-label">Assign to Member</label>

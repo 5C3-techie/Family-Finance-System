@@ -2,21 +2,38 @@
 <html>
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OTP Verification</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body>
+    <    cd d:\Programs\MinorProject
+    python -c "import sqlite3; c=sqlite3.connect('database.db').cursor(); print(c.execute('SELECT id,filename,filepath,upload_date FROM documents').fetchall())" class="container" style="max-width: 400px; margin: 80px auto;">
+        <div class="card p-4 shadow-sm">
+            <h2 class="mb-3">Enter OTP</h2>
 
-    <h2>Enter OTP</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
 
-    <form method="POST">
-
-        <input type="text" name="otp" placeholder="Enter OTP" required>
-
-        <button type="submit">Verify OTP</button>
-
-    </form>
-
+            <form method="POST">
+                <div class="mb-3">
+                    <input type="text" class="form-control" name="otp" placeholder="Enter OTP" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Verify OTP</button>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html
