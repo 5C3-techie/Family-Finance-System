@@ -87,7 +87,3 @@ When you start the app with `python app.py`:
 - Passwords are hashed with bcrypt.
 - OTP expires in 5 minutes.
 - Sensitive files (config.py, database.db) are ignored in .gitignore.
-
-## License
-
-This is a college minor project. Use for educational purposes.
