@@ -45,10 +45,8 @@ def login_user(email, password):
         conn.close()
 
         if not send_otp_email(user['email'], otp):
-            print("Failed to send OTP email")
             return None
 
-        print(f"OTP sent to {user['email']}")
         return user
 
     return None
