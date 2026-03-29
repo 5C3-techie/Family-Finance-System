@@ -1,10 +1,10 @@
 from database import get_db_connection
 
-def save_document(user_id, filename, filepath):
+def save_document(user_id, filename, filepath, description=''):
     conn = get_db_connection()
     conn.execute(
-        "INSERT INTO documents (user_id, filename, filepath) VALUES (?,?,?)",
-        (user_id, filename, filepath)
+        "INSERT INTO documents (user_id, filename, filepath, description) VALUES (?,?,?,?)",
+        (user_id, filename, filepath, description)
     )
     conn.commit()
     conn.close()
@@ -33,5 +33,14 @@ def get_document(doc_id):
         "SELECT * FROM documents WHERE id=?",
         (doc_id,)
     ).fetchone()
+    conn.close()
+    return doc
+
+def delete_document(doc_id):
+    conn = get_db_connection()
+    doc = conn.execute("SELECT * FROM documents WHERE id=?", (doc_id,)).fetchone()
+    if doc:
+        conn.execute("DELETE FROM documents WHERE id=?", (doc_id,))
+        conn.commit()
     conn.close()
     return doc
