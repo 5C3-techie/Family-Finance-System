@@ -4,6 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Document - Smart Family Finance</title>
+<<<<<<< HEAD
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #0d47a1;
+            --secondary-color: #1976d2;
+            --bg-color: #f4f7f6;
+            --text-color: #333333;
+            --accent: #2196f3;
+        }
+        body { 
+            background-color: var(--bg-color); 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--text-color);
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+        .card { 
+            border: none; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
+        .btn { border-radius: 8px; font-weight: 500; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .form-control { border-radius: 8px; padding: 0.75rem 1rem; border: 1px solid #e0e0e0; }
+        .form-control:focus { box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2); border-color: var(--accent); }
+        .upload-icon { font-size: 3rem; color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-5">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-safe2-fill me-2 fs-4"></i>Family Finance
+            </a>
+            <div class="d-flex align-items-center text-white">
+                <span class="me-4 d-none d-md-inline">
+                    <i class="bi bi-person-circle me-1"></i> {{ name }} 
+                    <span class="badge bg-light text-primary ms-1 shadow-sm">Admin</span>
+                </span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm px-3 rounded-pill fw-bold"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+=======
     <!-- Use Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -15,10 +64,21 @@
             <div class="d-flex align-items-center text-white">
                 <span class="me-3">Admin: {{ name }}</span>
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+>>>>>>> d53f4f118a55bd7b8c55f414597e2647a25f5d58
             </div>
         </div>
     </nav>
 
+<<<<<<< HEAD
+    <div class="container pb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>{{ message }}
+=======
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
@@ -28,12 +88,47 @@
                     {% for category, message in messages %}
                       <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                         {{ message }}
+>>>>>>> d53f4f118a55bd7b8c55f414597e2647a25f5d58
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                       </div>
                     {% endfor %}
                   {% endif %}
                 {% endwith %}
 
+<<<<<<< HEAD
+                <div class="card bg-white mt-2">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <i class="bi bi-cloud-arrow-up-fill upload-icon mb-2 d-inline-block"></i>
+                            <h3 class="fw-bold text-dark mb-1">Upload Document</h3>
+                            <p class="text-muted small">Securely store and share a family document</p>
+                        </div>
+                        <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+                            
+                            <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center">
+                                <i class="bi bi-globe2 fs-4 me-3 text-info"></i>
+                                <div class="small">Documents uploaded here are automatically categorized into the global repository and made visible to all designated family members.</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="description" class="form-label text-muted small fw-bold">DOCUMENT DESCRIPTION</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-card-text text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0 ps-0" id="description" name="description" placeholder="e.g., Mom PAN Card" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-5">
+                                <label for="file" class="form-label text-muted small fw-bold">SELECT FILE</label>
+                                <input class="form-control" type="file" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required style="padding: 0.5rem 1rem;">
+                                <div class="form-text mt-2"><i class="bi bi-file-earmark-check me-1"></i>Supported formats: PDF, JPG, PNG</div>
+                            </div>
+                            
+                            <div class="d-flex gap-3">
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-light w-50 py-2 fw-bold text-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-primary w-50 py-2"><i class="bi bi-cloud-upload me-2"></i>Upload File</button>
+                            </div>
+=======
                 <div class="card shadow">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Upload Financial Document</h4>
@@ -60,13 +155,17 @@
                             </div>
                             
                             <button type="submit" class="btn btn-primary w-100">Upload Document</button>
+>>>>>>> d53f4f118a55bd7b8c55f414597e2647a25f5d58
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+<<<<<<< HEAD
+=======
 
+>>>>>>> d53f4f118a55bd7b8c55f414597e2647a25f5d58
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
