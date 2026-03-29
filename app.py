@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import os
 import sqlite3
 import bcrypt
@@ -386,3 +387,21 @@ def delete(doc_id):
 if __name__ == '__main__':
     logging.info("Starting Family Finance Document Management System...")
     app.run(debug=True, port=5000)
+=======
+from flask import Flask
+from config import SECRET_KEY
+from database import init_db
+from routes.auth_routes import auth_bp
+from routes.document_routes import doc_bp
+
+app = Flask(__name__)
+app.secret_key = SECRET_KEY
+
+init_db()
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(doc_bp)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+>>>>>>> d53f4f118a55bd7b8c55f414597e2647a25f5d58
