@@ -109,6 +109,13 @@
                     </div>
                 </div>
                 <div class="mb-3">
+                    <label for="phone" class="form-label text-muted small fw-bold">PHONE NUMBER</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-telephone text-muted"></i></span>
+                        <input type="tel" class="form-control border-start-0 ps-0" id="phone" name="phone" placeholder="+91 9876543210" required>
+                    </div>
+                </div>
+                <div class="mb-3">
                     <label for="password" class="form-label text-muted small fw-bold">PASSWORD</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
@@ -116,13 +123,8 @@
                     </div>
                 </div>
                 <div class="mb-4">
-                    <label for="role" class="form-label text-muted small fw-bold">ACCOUNT ROLE</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-muted"></i></span>
-                        <select class="form-select border-start-0 ps-0" id="role" name="role" required>
-                            <option value="member">Member</option>
-                            <option value="admin">Admin</option>
-                        </select>
+                    <div class="alert alert-info rounded-3 small mb-0">
+                        The first registered account becomes <strong>admin</strong>. Later registrations become <strong>member</strong>.
                     </div>
                 </div>
                 <button type="submit" class="btn btn-success w-100 mb-3"><i class="bi bi-check-circle me-2"></i>Register Now</button>

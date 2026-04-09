@@ -90,7 +90,31 @@
 
         <div class="card bg-white mt-2">
             <div class="card-header bg-white border-bottom-0 d-flex justify-content-between align-items-center p-4">
-                <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-folder2-open text-primary me-2"></i>Shared Documents</h4>
+                <h4 class="mb-0 fw-bold text-dark">
+                    <i class="bi bi-folder2-open text-primary me-2"></i>
+                    {{ 'All Family Documents' if session.get('role') == 'admin' else 'My Assigned Documents' }}
+                </h4>
+            </div>
+            <div class="px-4 pb-3">
+                <form action="{{ url_for('doc.dashboard') }}" method="GET" class="row g-2 align-items-center">
+                    <div class="col-md-9">
+                        <input
+                            type="text"
+                            name="search"
+                            class="form-control"
+                            placeholder="Search by document name, description, uploader, or assigned member"
+                            value="{{ search_term or '' }}"
+                        >
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                        {% if search_term %}
+                        <a href="{{ url_for('doc.dashboard') }}" class="btn btn-outline-secondary w-100">Clear</a>
+                        {% endif %}
+                    </div>
+                </form>
             </div>
             <div class="card-body p-0">
                 {% if documents and documents|length > 0 %}
@@ -100,8 +124,12 @@
                                 <tr>
                                     <th class="ps-4">#</th>
                                     <th>Document Name</th>
+                                    <th>Description</th>
                                     <th>Uploaded At</th>
                                     <th>Uploaded By</th>
+                                    {% if session.get('role') == 'admin' %}
+                                    <th>Assigned To</th>
+                                    {% endif %}
                                     <th class="pe-4 text-end">Action</th>
                                 </tr>
                             </thead>
@@ -110,12 +138,27 @@
                                 <tr>
                                     <td class="ps-4 fw-bold text-dark">{{ loop.index }}</td>
                                     <td class="fw-bold text-dark"><i class="bi bi-file-earmark-text text-secondary me-2"></i>{{ doc.filename }}</td>
+                                    <td class="text-muted small">{{ doc.description or '-' }}</td>
                                     <td class="text-muted small">{{ doc.upload_date }}</td>
-                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>{{ doc['user_name'] if doc['user_name'] else 'You' }}</span></td>
+                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>{{ doc['uploaded_by_name'] if doc['uploaded_by_name'] else 'Unknown' }}</span></td>
+                                    {% if session.get('role') == 'admin' %}
+                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-people me-1"></i>{{ doc['assigned_member_name'] if doc['assigned_member_name'] else 'Unassigned' }}</span></td>
+                                    {% endif %}
                                     <td class="pe-4">
                                         <div class="d-flex gap-2 justify-content-end">
+                                            <a href="{{ url_for('doc.view', doc_id=doc.id) }}" class="btn btn-outline-primary btn-sm px-3" target="_blank"><i class="bi bi-eye me-1"></i>View</a>
                                             <a href="{{ url_for('doc.download', doc_id=doc.id) }}" class="btn btn-success btn-sm px-3"><i class="bi bi-download me-1"></i>Download</a>
                                             {% if session.get('role') == 'admin' %}
+                                            <form action="{{ url_for('doc.reassign', doc_id=doc.id) }}" method="POST" class="d-inline">
+                                                <select name="assigned_member" class="form-select form-select-sm d-inline-block" style="width: 180px;" onchange="this.form.submit()">
+                                                    <option value="">Reassign to...</option>
+                                                    {% for user in users %}
+                                                        {% if user.role == 'member' %}
+                                                        <option value="{{ user.id }}" {% if doc.assigned_member == user.id %}selected{% endif %}>{{ user.name }}</option>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </select>
+                                            </form>
                                             <form action="{{ url_for('doc.delete', doc_id=doc.id) }}" method="POST" class="d-inline">
                                                 <button type="submit" class="btn btn-danger btn-sm px-3" onclick="return confirm('Delete this document?');">
                                                     <i class="bi bi-trash me-1"></i>Delete
@@ -133,11 +176,70 @@
                     <div class="text-center p-5">
                         <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
                         <h5 class="mt-3 text-muted">No documents found</h5>
-                        <p class="text-muted small">Upload a document to get started.</p>
+                        <p class="text-muted small">
+                            {% if search_term %}
+                            No documents matched your search for "{{ search_term }}".
+                            {% else %}
+                            Upload a document to get started.
+                            {% endif %}
+                        </p>
                     </div>
                 {% endif %}
             </div>
         </div>
+
+        {% if session.get('role') == 'admin' %}
+        <div class="card bg-white mt-4">
+            <div class="card-header bg-white border-bottom-0 p-4">
+                <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Manage Members</h4>
+            </div>
+            <div class="card-body p-0">
+                {% if users and users|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Current Role</th>
+                                <th class="pe-4 text-end">Role Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">{{ user.name }}</td>
+                                <td class="text-muted small">{{ user.email }}</td>
+                                <td class="text-muted small">{{ user.phone or '-' }}</td>
+                                <td>
+                                    <span class="badge {% if user.role == 'admin' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                        {{ user.role|capitalize }}
+                                    </span>
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <form action="{{ url_for('auth.update_role', user_id=user.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="next_page" value="dashboard">
+                                        {% if user.role == 'admin' %}
+                                        <input type="hidden" name="role" value="member">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove Admin</button>
+                                        {% else %}
+                                        <input type="hidden" name="role" value="admin">
+                                        <button type="submit" class="btn btn-outline-primary btn-sm">Make Admin</button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-4 text-muted small">No users available for role management.</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

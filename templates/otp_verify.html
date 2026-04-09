@@ -96,6 +96,7 @@
             {% endwith %}
 
             <form action="{{ url_for('auth.verify_otp') }}" method="POST">
+                <input type="hidden" name="action" value="verify">
                 <div class="mb-4">
                     <input
                         type="text"
@@ -114,6 +115,10 @@
             </form>
 
             <div class="text-center">
+                <form action="{{ url_for('auth.verify_otp') }}" method="POST" class="mb-2">
+                    <input type="hidden" name="action" value="resend">
+                    <button type="submit" class="btn btn-link text-decoration-none fw-bold">Resend OTP</button>
+                </form>
                 <p class="text-muted small mb-0">
                     <a href="{{ url_for('auth.login') }}" class="text-decoration-none fw-bold text-secondary">
                         Cancel and Return to Login

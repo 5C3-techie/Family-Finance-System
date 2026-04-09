@@ -5,28 +5,94 @@ from database import get_db_connection
 from services.otp_service import generate_otp
 from utils.email_utils import send_otp_email
 
-def register_user(name, email, password, role):
+
+def get_registration_role(conn):
+    admin = conn.execute("SELECT id FROM users WHERE role='admin' LIMIT 1").fetchone()
+    return 'member' if admin else 'admin'
+
+
+def get_all_users():
+    conn = get_db_connection()
+    users = conn.execute(
+        "SELECT id, name, email, phone, role FROM users ORDER BY role DESC, name ASC"
+    ).fetchall()
+    conn.close()
+    return users
+
+
+def update_user_role(user_id, new_role):
+    if new_role not in {'admin', 'member'}:
+        return False, 'Invalid role selected.'
+
+    conn = get_db_connection()
+    user = conn.execute(
+        "SELECT id, role, name FROM users WHERE id=?",
+        (user_id,)
+    ).fetchone()
+
+    if not user:
+        conn.close()
+        return False, 'User not found.'
+
+    if user['role'] == new_role:
+        conn.close()
+        return False, f"{user['name']} is already a {new_role}."
+
+    if user['role'] == 'admin' and new_role == 'member':
+        admin_count = conn.execute(
+            "SELECT COUNT(*) FROM users WHERE role='admin'"
+        ).fetchone()[0]
+        if admin_count <= 1:
+            conn.close()
+            return False, 'You cannot remove admin access from the last admin.'
+
+    conn.execute("UPDATE users SET role=? WHERE id=?", (new_role, user_id))
+    conn.commit()
+    conn.close()
+    return True, f"{user['name']} is now a {new_role}."
+
+
+def register_user(name, email, phone, password):
     conn = get_db_connection()
 
     existing = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
     if existing:
         conn.close()
-        return False
+        return False, None
 
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(password.encode(), salt).decode()
+    role = get_registration_role(conn)
 
     try:
         conn.execute(
-            "INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)",
-            (name, email, hashed_password, role)
+            "INSERT INTO users (name,email,phone,password,role) VALUES (?,?,?,?,?)",
+            (name, email, phone, hashed_password, role)
         )
         conn.commit()
-        return True
+        return True, role
     except sqlite3.IntegrityError:
-        return False
+        return False, None
     finally:
         conn.close()
+
+
+def issue_login_otp(user):
+    otp, expiry = generate_otp()
+
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE users SET otp=?, otp_expiry=? WHERE id=?",
+        (otp, expiry, user['id'])
+    )
+    conn.commit()
+    conn.close()
+
+    if not send_otp_email(user['email'], otp):
+        return False
+
+    return True
+
 
 def login_user(email, password):
     conn = get_db_connection()
@@ -34,22 +100,23 @@ def login_user(email, password):
     conn.close()
 
     if user and bcrypt.checkpw(password.encode(), user['password'].encode()):
-        otp, expiry = generate_otp()
-
-        conn = get_db_connection()
-        conn.execute(
-            "UPDATE users SET otp=?, otp_expiry=? WHERE id=?",
-            (otp, expiry, user['id'])
-        )
-        conn.commit()
-        conn.close()
-
-        if not send_otp_email(user['email'], otp):
+        if not issue_login_otp(user):
             return None
 
         return user
 
     return None
+
+
+def resend_user_otp(user_id):
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    conn.close()
+
+    if not user:
+        return False
+
+    return issue_login_otp(user)
 
 def verify_user_otp(user_id, entered_otp):
     conn = get_db_connection()
