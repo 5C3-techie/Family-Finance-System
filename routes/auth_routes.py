@@ -55,6 +55,7 @@ def verify_otp():
         if user:
             session.pop('temp_user', None)
             session['user_id'] = user['id']
+            session['name'] = user['name']
             session['role'] = user['role']
             return redirect(url_for('doc.dashboard'))
 

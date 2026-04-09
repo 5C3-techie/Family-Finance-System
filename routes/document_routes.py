@@ -1,38 +1,119 @@
-from flask import Blueprint, render_template, request, redirect, session, url_for, send_from_directory
+from flask import Blueprint, render_template, request, redirect, session, url_for, send_from_directory, flash
 from services.document_service import *
 from utils.file_utils import save_file
 from config import UPLOAD_FOLDER
 import os
+from database import get_db_connection
+from werkzeug.utils import secure_filename
+from datetime import datetime
 
 doc_bp = Blueprint('doc', __name__)
 
 @doc_bp.route('/dashboard')
 def dashboard():
-    if session['role'] == 'admin':
-        docs = get_admin_documents()
-    else:
-        docs = get_user_documents(session['user_id'])
+    if 'user_id' not in session:
+        flash('Please log in to access your dashboard.', 'warning')
+        return redirect(url_for('auth.login'))
 
-    return render_template('dashboard.html', documents=docs)
+    conn = get_db_connection()
+    
+    # All documents are globally visible, fetch uploader info regardless of role
+    documents = conn.execute('''
+        SELECT d.id, d.filename, d.description, d.upload_date, u.name as user_name 
+        FROM documents d
+        JOIN users u ON d.user_id = u.id
+        ORDER BY d.upload_date DESC
+    ''').fetchall()
+        
+    conn.close()
+    
+    return render_template('dashboard.html', documents=documents, role=session['role'], name=session['name'])
 
-@doc_bp.route('/upload', methods=['GET','POST'])
+@doc_bp.route('/upload', methods=['GET', 'POST'])
 def upload():
-    if request.method == 'POST':
-        file = request.files['file']
-        user_id = request.form['user_id']
-
-        filename, filepath = save_file(file, UPLOAD_FOLDER)
-        save_document(user_id, filename, filepath)
-
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('auth.login'))
+        
+    if session['role'] != 'admin':
+        flash('Access denied. Only administrators can upload documents.', 'danger')
         return redirect(url_for('doc.dashboard'))
 
-    return render_template('upload.html')
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file detected in upload.', 'danger')
+            return redirect(request.url)
+            
+        file = request.files['file']
+        user_id = session['user_id']
+        description = request.form.get('description', '')
+        
+        if file.filename == '':
+            flash('No file selected.', 'danger')
+            return redirect(request.url)
+
+        if file:
+            original_filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            unique_filename = f"{timestamp}_{original_filename}"
+            
+            filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
+            try:
+                file.save(filepath)
+                
+                save_document(user_id, original_filename, filepath, description)
+                
+                flash(f'Document "{original_filename}" uploaded successfully!', 'success')
+                return redirect(url_for('doc.dashboard'))
+            except Exception as e:
+                flash('An error occurred while uploading. Please try again.', 'danger')
+
+    return render_template('upload.html', name=session['name'])
 
 @doc_bp.route('/download/<int:doc_id>')
 def download(doc_id):
+    if 'user_id' not in session:
+        flash('Please login to download.', 'warning')
+        return redirect(url_for('auth.login'))
+
     doc = get_document(doc_id)
 
-    directory = os.path.abspath(UPLOAD_FOLDER)
-    filename = os.path.basename(doc['filepath'])
+    if not doc:
+        flash('Document not found.', 'danger')
+        return redirect(url_for('doc.dashboard'))
 
-    return send_from_directory(directory, filename)
+    try:
+        directory = os.path.abspath(UPLOAD_FOLDER)
+        filename_on_disk = os.path.basename(doc['filepath'])
+        return send_from_directory(directory, filename_on_disk, as_attachment=True, download_name=doc['filename'])
+    except Exception as e:
+        flash('Error fetching file. It might have been deleted.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
+@doc_bp.route('/delete/<int:doc_id>', methods=['POST'])
+def delete(doc_id):
+    if 'user_id' not in session:
+        flash('Please login to delete documents.', 'warning')
+        return redirect(url_for('auth.login'))
+        
+    if session['role'] != 'admin':
+        flash('Access denied. Only administrators can delete documents.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
+    doc = get_document(doc_id)
+    
+    if not doc:
+        flash('Document not found.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+        
+    try:
+        # Delete the actual file from filesystem
+        if os.path.exists(doc['filepath']):
+            os.remove(doc['filepath'])
+        # Delete DB record
+        delete_document(doc_id)
+        flash('Document deleted successfully.', 'success')
+    except Exception as e:
+        flash('An error occurred while deleting the document.', 'danger')
+
+    return redirect(url_for('doc.dashboard'))

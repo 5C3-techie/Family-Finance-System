@@ -31,5 +31,10 @@ def init_db():
         )
     ''')
 
+    try:
+        conn.execute('ALTER TABLE documents ADD COLUMN description TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
     conn.commit()
     conn.close()
