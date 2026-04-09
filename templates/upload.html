@@ -89,8 +89,8 @@
     </nav>
 
     <div class="container pb-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-7">
+        <div class="row justify-content-center g-4">
+            <div class="col-lg-7">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -113,7 +113,7 @@
                         <form action="{{ url_for('doc.upload') }}" method="POST" enctype="multipart/form-data">
                             <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center">
                                 <i class="bi bi-globe2 fs-4 me-3 text-info"></i>
-                                <div class="small">Documents uploaded here are added to the shared family repository and visible on the dashboard.</div>
+                                <div class="small">Choose a family member below. This document will be assigned to that member after upload.</div>
                             </div>
 
                             <div class="mb-4">
@@ -122,6 +122,17 @@
                                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-card-text text-muted"></i></span>
                                     <input type="text" class="form-control border-start-0 ps-0" id="description" name="description" placeholder="e.g., Mom PAN Card" required>
                                 </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="assigned_member" class="form-label text-muted small fw-bold">ASSIGN TO MEMBER</label>
+                                <select class="form-control" id="assigned_member" name="assigned_member" required>
+                                    <option value="">Select a member</option>
+                                    {% for member in members %}
+                                    <option value="{{ member.id }}">{{ member.name }}{% if member.email %} - {{ member.email }}{% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text mt-2">Only registered members appear in this list.</div>
                             </div>
 
                             <div class="mb-5">
@@ -135,6 +146,46 @@
                                 <button type="submit" class="btn btn-primary w-50 py-2"><i class="bi bi-cloud-upload me-2"></i>Upload File</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card bg-white mt-2">
+                    <div class="card-body p-4">
+                        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-gear text-primary me-2"></i>Manage Roles</h4>
+                        <p class="text-muted small mb-4">Promote members to admin or remove admin access right from the assignment area.</p>
+
+                        {% if users and users|length > 0 %}
+                            <div class="d-grid gap-3">
+                                {% for user in users %}
+                                <div class="border rounded-3 p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ user.name }}</div>
+                                            <div class="text-muted small">{{ user.email }}</div>
+                                            <div class="text-muted small">{{ user.phone or '-' }}</div>
+                                        </div>
+                                        <span class="badge {% if user.role == 'admin' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                            {{ user.role|capitalize }}
+                                        </span>
+                                    </div>
+                                    <form action="{{ url_for('auth.update_role', user_id=user.id) }}" method="POST">
+                                        <input type="hidden" name="next_page" value="upload">
+                                        {% if user.role == 'admin' %}
+                                        <input type="hidden" name="role" value="member">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">Remove Admin</button>
+                                        {% else %}
+                                        <input type="hidden" name="role" value="admin">
+                                        <button type="submit" class="btn btn-outline-primary btn-sm w-100">Make Admin</button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted small">No users available for role management.</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

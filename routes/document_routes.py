@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, session, url_for, send_from_directory, flash
+from services.auth_service import get_all_users
 from services.document_service import *
 from utils.file_utils import save_file
 from config import UPLOAD_FOLDER
@@ -22,23 +23,25 @@ def dashboard():
         return redirect(url_for('auth.login'))
 
     documents = []
-    conn = None
+    users = []
+    search_term = request.args.get('search', '').strip()
     try:
-        conn = get_db_connection()
-        # All documents are globally visible, fetch uploader info regardless of role
-        documents = conn.execute('''
-            SELECT d.id, d.filename, d.description, d.upload_date, u.name as user_name
-            FROM documents d
-            JOIN users u ON d.user_id = u.id
-            ORDER BY d.upload_date DESC
-        ''').fetchall()
+        if session['role'] == 'admin':
+            documents = get_admin_documents(search_term)
+            users = get_all_users()
+        else:
+            documents = get_user_documents(session['user_id'], search_term)
     except sqlite3.Error:
         flash('Unable to load documents right now. Please try again shortly.', 'danger')
-    finally:
-        if conn is not None:
-            conn.close()
 
-    return render_template('dashboard.html', documents=documents, role=session['role'], name=session['name'])
+    return render_template(
+        'dashboard.html',
+        documents=documents,
+        users=users,
+        role=session['role'],
+        name=session['name'],
+        search_term=search_term
+    )
 
 @doc_bp.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -50,17 +53,30 @@ def upload():
         flash('Access denied. Only administrators can upload documents.', 'danger')
         return redirect(url_for('doc.dashboard'))
 
+    members = []
+    users = []
+    try:
+        members = get_members()
+        users = get_all_users()
+    except sqlite3.Error:
+        flash('Unable to load members right now. Please try again shortly.', 'danger')
+
     if request.method == 'POST':
         if 'file' not in request.files:
             flash('No file detected in upload.', 'danger')
             return redirect(request.url)
             
         file = request.files['file']
-        user_id = session['user_id']
+        uploaded_by = session['user_id']
         description = request.form.get('description', '')
+        assigned_member = request.form.get('assigned_member')
         
         if file.filename == '':
             flash('No file selected.', 'danger')
+            return redirect(request.url)
+
+        if not assigned_member:
+            flash('Please select a member to assign this document to.', 'danger')
             return redirect(request.url)
 
         if not allowed_file(file.filename):
@@ -77,7 +93,7 @@ def upload():
         try:
             file.save(filepath)
 
-            save_document(user_id, original_filename, filepath, description)
+            save_document(uploaded_by, int(assigned_member), original_filename, filepath, description)
 
             flash(f'Document "{original_filename}" uploaded successfully!', 'success')
             return redirect(url_for('doc.dashboard'))
@@ -89,7 +105,7 @@ def upload():
                     pass
             flash('An error occurred while uploading. Please try again.', 'danger')
 
-    return render_template('upload.html', name=session['name'])
+    return render_template('upload.html', name=session['name'], members=members, users=users)
 
 @doc_bp.route('/download/<int:doc_id>')
 def download(doc_id):
@@ -103,6 +119,10 @@ def download(doc_id):
         flash('Document not found.', 'danger')
         return redirect(url_for('doc.dashboard'))
 
+    if session['role'] != 'admin' and doc['assigned_member'] != session['user_id']:
+        flash('Access denied. You can only download documents assigned to you.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
     try:
         directory = os.path.abspath(UPLOAD_FOLDER)
         filename_on_disk = os.path.basename(doc['filepath'])
@@ -110,6 +130,59 @@ def download(doc_id):
     except Exception as e:
         flash('Error fetching file. It might have been deleted.', 'danger')
         return redirect(url_for('doc.dashboard'))
+
+
+@doc_bp.route('/view/<int:doc_id>')
+def view(doc_id):
+    if 'user_id' not in session:
+        flash('Please login to view documents.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    doc = get_document(doc_id)
+
+    if not doc:
+        flash('Document not found.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
+    if session['role'] != 'admin' and doc['assigned_member'] != session['user_id']:
+        flash('Access denied. You can only view documents assigned to you.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
+    try:
+        directory = os.path.abspath(UPLOAD_FOLDER)
+        filename_on_disk = os.path.basename(doc['filepath'])
+        return send_from_directory(directory, filename_on_disk, as_attachment=False, download_name=doc['filename'])
+    except Exception:
+        flash('Error opening file. It might have been deleted.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
+
+@doc_bp.route('/reassign/<int:doc_id>', methods=['POST'])
+def reassign(doc_id):
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    if session['role'] != 'admin':
+        flash('Only administrators can reassign documents.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
+    assigned_member = request.form.get('assigned_member')
+    if not assigned_member:
+        flash('Please select a member before reassigning.', 'danger')
+        return redirect(url_for('doc.dashboard'))
+
+    try:
+        success = reassign_document(doc_id, int(assigned_member))
+    except Exception:
+        success = False
+
+    if success:
+        flash('Document reassigned successfully.', 'success')
+    else:
+        flash('Unable to reassign document. Please try again.', 'danger')
+
+    return redirect(url_for('doc.dashboard'))
 
 @doc_bp.route('/delete/<int:doc_id>', methods=['POST'])
 def delete(doc_id):
