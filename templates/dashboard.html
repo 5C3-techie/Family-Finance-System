@@ -68,7 +68,9 @@
                     <i class="bi bi-person-circle me-1"></i> {{ session.get('name', 'User') }} 
                     <span class="badge bg-light text-primary ms-1 shadow-sm">{{ session.get('role', 'user')|capitalize }}</span>
                 </span>
+                {% if session.get('role') == 'admin' %}
                 <a href="{{ url_for('doc.upload') }}" class="btn btn-light btn-sm me-2"><i class="bi bi-cloud-arrow-up-fill me-1"></i>Upload</a>
+                {% endif %}
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm px-3 rounded-pill fw-bold"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
             </div>
         </div>
@@ -109,10 +111,17 @@
                                     <td class="ps-4 fw-bold text-dark">{{ loop.index }}</td>
                                     <td class="fw-bold text-dark"><i class="bi bi-file-earmark-text text-secondary me-2"></i>{{ doc.filename }}</td>
                                     <td class="text-muted small">{{ doc.upload_date }}</td>
-                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>{{ doc.get('user_name', 'You') }}</span></td>
+                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>{{ doc['user_name'] if doc['user_name'] else 'You' }}</span></td>
                                     <td class="pe-4">
                                         <div class="d-flex gap-2 justify-content-end">
                                             <a href="{{ url_for('doc.download', doc_id=doc.id) }}" class="btn btn-success btn-sm px-3"><i class="bi bi-download me-1"></i>Download</a>
+                                            {% if session.get('role') == 'admin' %}
+                                            <form action="{{ url_for('doc.delete', doc_id=doc.id) }}" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-danger btn-sm px-3" onclick="return confirm('Delete this document?');">
+                                                    <i class="bi bi-trash me-1"></i>Delete
+                                                </button>
+                                            </form>
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>

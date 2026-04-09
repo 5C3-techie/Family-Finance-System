@@ -3,11 +3,17 @@ from services.document_service import *
 from utils.file_utils import save_file
 from config import UPLOAD_FOLDER
 import os
+import sqlite3
 from database import get_db_connection
 from werkzeug.utils import secure_filename
 from datetime import datetime
 
 doc_bp = Blueprint('doc', __name__)
+ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png'}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @doc_bp.route('/dashboard')
 def dashboard():
@@ -15,18 +21,23 @@ def dashboard():
         flash('Please log in to access your dashboard.', 'warning')
         return redirect(url_for('auth.login'))
 
-    conn = get_db_connection()
-    
-    # All documents are globally visible, fetch uploader info regardless of role
-    documents = conn.execute('''
-        SELECT d.id, d.filename, d.description, d.upload_date, u.name as user_name 
-        FROM documents d
-        JOIN users u ON d.user_id = u.id
-        ORDER BY d.upload_date DESC
-    ''').fetchall()
-        
-    conn.close()
-    
+    documents = []
+    conn = None
+    try:
+        conn = get_db_connection()
+        # All documents are globally visible, fetch uploader info regardless of role
+        documents = conn.execute('''
+            SELECT d.id, d.filename, d.description, d.upload_date, u.name as user_name
+            FROM documents d
+            JOIN users u ON d.user_id = u.id
+            ORDER BY d.upload_date DESC
+        ''').fetchall()
+    except sqlite3.Error:
+        flash('Unable to load documents right now. Please try again shortly.', 'danger')
+    finally:
+        if conn is not None:
+            conn.close()
+
     return render_template('dashboard.html', documents=documents, role=session['role'], name=session['name'])
 
 @doc_bp.route('/upload', methods=['GET', 'POST'])
@@ -52,21 +63,31 @@ def upload():
             flash('No file selected.', 'danger')
             return redirect(request.url)
 
-        if file:
-            original_filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            unique_filename = f"{timestamp}_{original_filename}"
-            
-            filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
-            try:
-                file.save(filepath)
-                
-                save_document(user_id, original_filename, filepath, description)
-                
-                flash(f'Document "{original_filename}" uploaded successfully!', 'success')
-                return redirect(url_for('doc.dashboard'))
-            except Exception as e:
-                flash('An error occurred while uploading. Please try again.', 'danger')
+        if not allowed_file(file.filename):
+            flash('Invalid file type. Please upload a PDF, JPG, JPEG, or PNG file.', 'danger')
+            return redirect(request.url)
+
+        original_filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_filename = f"{timestamp}_{original_filename}"
+
+        filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+        try:
+            file.save(filepath)
+
+            save_document(user_id, original_filename, filepath, description)
+
+            flash(f'Document "{original_filename}" uploaded successfully!', 'success')
+            return redirect(url_for('doc.dashboard'))
+        except Exception:
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    pass
+            flash('An error occurred while uploading. Please try again.', 'danger')
 
     return render_template('upload.html', name=session['name'])
 
